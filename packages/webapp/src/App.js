@@ -3,17 +3,17 @@ import { YAMLConfigContextProvider } from './contexts/YAMLConfigContext';
 import { Index } from './pages/Index';
 import { FormContextProvider } from './contexts/FormContext';
 import { SidePanel } from './components/SidePanel';
-import { ErrorContextProvider } from './contexts/ErrorContext';
 import './scss/index.scss';
+import { ScriptCallHistoryContextProvider } from './contexts/ScriptCallHistoryContext';
 
 function App() {
   return (
     <YAMLConfigContextProvider>
       <FormContextProvider>
-        <ErrorContextProvider>
+        <ScriptCallHistoryContextProvider>
           <SidePanel />
           <Index />
-        </ErrorContextProvider>
+        </ScriptCallHistoryContextProvider>
       </FormContextProvider>
     </YAMLConfigContextProvider>
   );

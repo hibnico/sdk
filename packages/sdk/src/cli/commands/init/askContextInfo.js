@@ -19,9 +19,9 @@ const doesContextAlreadyExist = async (contextId) => {
 module.exports = async () => {
   output.log(chalk`
 👇 {bold New context}
-${figures.pointerSmall} {bold label} {gray will be diplayed in the User Interface}
+${figures.pointerSmall} {bold label} {gray will be displayed in the User Interface}
 ${figures.pointerSmall} {bold id} {gray must be {bold unique} in your technology}
-${figures.pointerSmall} {bold description} {gray will be diplayed in the User Interface}
+${figures.pointerSmall} {bold description} {gray will be displayed in the User Interface}
 ${figures.pointerSmall} {bold recommended} {gray will recommend this context to users}
 `);
 

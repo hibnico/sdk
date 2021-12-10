@@ -37,39 +37,57 @@ demoApp.get('/datasets', (req, res) => {
   res.send(datasets);
 });
 
+const getData = (id) => datasets[datasets.findIndex((dataset) => dataset.id === id)];
+
 demoApp.post('/datasets/:id/start', (req, res) => {
-  const selectedDataset = datasets[datasets.findIndex((dataset) => dataset.id === req.params.id)];
-  selectedDataset.status = STATUS.IN_PROGRESS;
-  res.send(selectedDataset);
+  const selectedDataset = getData(req.params.id);
+  if (selectedDataset) {
+    selectedDataset.status = STATUS.IN_PROGRESS;
+    res.send(selectedDataset);
+  } else {
+    res.sendStatus(404);
+  }
 });
 
 demoApp.post('/datasets/:id/stop', (req, res) => {
-  const selectedDataset = datasets[datasets.findIndex((dataset) => dataset.id === req.params.id)];
-  selectedDataset.status = STATUS.STOPPED;
-  res.send(selectedDataset);
+  const selectedDataset = getData(req.params.id);
+  if (selectedDataset) {
+    selectedDataset.status = STATUS.STOPPED;
+    res.send(selectedDataset);
+  } else {
+    res.sendStatus(404);
+  }
 });
 
 demoApp.get('/datasets/:id/logs', (req, res) => {
-  const selectedDataset = datasets[datasets.findIndex((dataset) => dataset.id === req.params.id)];
-  const randomLogsIndex = Math.floor(Math.random() * logs.length);
+  const selectedDataset = getData(req.params.id);
+  if (selectedDataset) {
+    const randomLogsIndex = Math.floor(Math.random() * logs.length);
 
-  // Push a new log in the logs array for the example. Each request will create
-  // a new object.
-  selectedDataset.logs.push({
-    // eslint-disable-next-line security/detect-object-injection
-    log: `[LOGS] Log for the dataset ${selectedDataset.id}: ${logs[randomLogsIndex]}`,
-    output: randomLogsIndex % 2 === 0 ? 'stdout' : 'stderr',
-    time: (new Date()).toISOString(),
-  });
+    // Push a new log in the logs array for the example. Each request will create
+    // a new object.
+    selectedDataset.logs.push({
+      // eslint-disable-next-line security/detect-object-injection
+      log: `[LOGS] Log for the dataset ${selectedDataset.id}: ${logs[randomLogsIndex]}`,
+      output: randomLogsIndex % 2 === 0 ? 'stdout' : 'stderr',
+      time: (new Date()).toISOString(),
+    });
 
-  res.send({
-    logs: selectedDataset.logs,
-  });
+    res.send({
+      logs: selectedDataset.logs,
+    });
+  } else {
+    res.sendStatus(404);
+  }
 });
 
 demoApp.get('/datasets/:id', (req, res) => {
-  const selectedDataset = datasets[datasets.findIndex((dataset) => dataset.id === req.params.id)];
-  res.send(selectedDataset);
+  const selectedDataset = getData(req.params.id);
+  if (selectedDataset) {
+    res.send(selectedDataset);
+  } else {
+    res.sendStatus(404);
+  }
 });
 
 module.exports = demoApp;
