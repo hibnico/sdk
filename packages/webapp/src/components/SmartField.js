@@ -16,14 +16,14 @@ const propTypes = {
   formName: PropTypes.string.isRequired,
   formValues: PropTypes.object,
   contextFolderPath: PropTypes.string,
-  field: PropTypes.object,
+  parameter: PropTypes.object,
 };
 
 const defaultProps = {
   onUpdate: () => {},
   formValues: {},
   contextFolderPath: '',
-  field: {},
+  parameter: {},
 };
 
 export const SmartField = ({
@@ -31,15 +31,17 @@ export const SmartField = ({
   formValues = {},
   formName,
   contextFolderPath,
-  field: {
+  parameter: {
     type,
-    name,
+    id,
     label,
-    required,
-    helper,
-    options,
+    mandatory,
+    comment,
+    dynamicValues,
+    staticValues,
     dependsOn,
     value,
+    defaultValue,
   },
 }) => {
   const [error, setError] = useState();
@@ -56,12 +58,12 @@ export const SmartField = ({
   const currentFormRef = useRef();
   currentFormRef.current = currentForm;
 
-  const fieldValue = currentForm[name] || formControlInputValue;
+  const fieldValue = currentForm[id] || formControlInputValue;
 
   const handleFormControlInput = useCallback((e) => {
     setFormControlInputValue('');
-    onUpdate({ name, value: e.target.value });
-  }, [onUpdate, name]);
+    onUpdate({ name: id, value: e.target.value });
+  }, [onUpdate, id]);
 
   const triggerInputDataFetching = () => {
     if (value && typeof value === 'object' && value.script && shouldBeDisplayed && formControlInputLoading) {
@@ -75,7 +77,7 @@ export const SmartField = ({
             },
           });
 
-          onUpdate({ name, value: data });
+          onUpdate({ id, value: data });
         } catch (err) {
           setError(err.response?.data);
         }
@@ -89,60 +91,28 @@ export const SmartField = ({
 
   const getField = () => {
     switch (type) {
-    case 'RADIO': {
-      const radioProps = Array.isArray(options) ? options : [];
+    case 'TOGGLE': {
       return (
-        radioProps?.map((radio) => (
-          <FormCheck
-            isRadio
-            key={radio.value}
-            value={radio.value}
-            name={name}
-            onChange={(e) => onUpdate({ name, value: e.target.value })}
-          >{radio.label || ''}
-          </FormCheck>
-        ))
+        <FormCheck
+          key={id}
+          name={id}
+          defaultChecked={defaultValue}
+          onChange={(e) => onUpdate({ name: id, value: e.target.value })}
+        >{label || ''}
+        </FormCheck>
       );
     }
-    case 'TEXTAREA':
-      triggerInputDataFetching();
-
-      return (
-        <FormControlInput
-          name={name}
-          tag="textarea"
-          value={fieldValue || ''}
-          autoComplete={name}
-          onChange={handleFormControlInput}
-          required={required}
-          isLoading={formControlInputLoading}
-        />
-      );
 
     case 'TEXT':
       triggerInputDataFetching();
 
       return (
         <FormControlInput
-          name={name}
+          name={id}
           value={fieldValue || ''}
-          autoComplete={name}
+          autoComplete={id}
           onChange={handleFormControlInput}
-          required={required}
-          isLoading={formControlInputLoading}
-        />
-      );
-
-    case 'URL':
-      triggerInputDataFetching();
-
-      return (
-        <FormControlInput
-          name={name}
-          value={fieldValue || ''}
-          autoComplete={name}
-          type="url"
-          onChange={handleFormControlInput}
+          required={mandatory}
           isLoading={formControlInputLoading}
         />
       );
@@ -150,64 +120,27 @@ export const SmartField = ({
     case 'PASSWORD':
       return (
         <FormPassword
-          name={name}
+          name={id}
           value={fieldValue || ''}
-          autoComplete={name}
-          onChange={(e) => onUpdate({ name, value: e.target.value })}
+          autoComplete={id}
+          onChange={(e) => onUpdate({ name: id, value: e.target.value })}
         />
       );
 
-    case 'SELECT': {
-      const selectProps = Array.isArray(options)
-        // Hard coded options in context.yaml
-        ? {
-          options: options?.map((option) => (
-            { value: option.id, label: option.label, payload: option }
-          )),
-        }
-        // Dynamic options in custom JavaScript files
-        : {
-          isAsync: true,
-          cacheOptions: true,
-          defaultOptions: true,
-          loadOptions: async () => {
-            setError(null);
-
-            if (
-              !shouldBeDisplayed
-              || !options
-              || !options.script
-              || !options.function
-            ) {
-              return options;
-            }
-
-            try {
-              const { data } = await axios.post('/api/action', {
-                script: `${contextFolderPath}/${options.script}`,
-                function: options.function,
-                params: {
-                  featuresValues: currentFormRef.current,
-                },
-              });
-
-              return data?.map((x) => ({ value: x.id, label: x.label, payload: x }));
-            } catch (err) {
-              setError(err.response?.data);
-            }
-
-            return [];
-          },
-        };
-
+    case 'STATIC_SELECT': {
+      const selectProps = {
+        options: staticValues?.map((option) => (
+          { value: option.id, label: option.label, payload: option }
+        )),
+      };
       return (
         <FormControlSelect
           // Used to avoid long label to be cropped when selected. Closes #65.
           // By adding this prop, it also remove the horizontal scrollbar.
           menuPortalTarget={document.body}
-          name={name}
+          name={id}
           onChange={({ payload }) => {
-            onUpdate({ name, value: payload });
+            onUpdate({ name: id, value: payload });
           }}
           value={fieldValue ? {
             label: fieldValue.label,
@@ -218,28 +151,57 @@ export const SmartField = ({
         />
       );
     }
-    case 'ENDPOINT':
-      if (formName === 'endpoint') {
-        return (
-          <div className="sui-m-message as--light as--danger">
-            You can&apos;t use a type <code>ENDPOINT</code> in endpoint features.
-          </div>
-        );
-      }
+    case 'DYNAMIC_SELECT': {
+      const selectProps = {
+        isAsync: true,
+        cacheOptions: true,
+        defaultOptions: true,
+        loadOptions: async () => {
+          setError(null);
+
+          if (
+            !shouldBeDisplayed
+            || !dynamicValues
+            || !dynamicValues.script
+            || !dynamicValues.function
+          ) {
+            return dynamicValues;
+          }
+
+          try {
+            const { data } = await axios.post('/api/action', {
+              script: `${contextFolderPath}/${dynamicValues.script}`,
+              function: dynamicValues.function,
+              params: formValues,
+            });
+
+            return data?.map((x) => ({ value: x.id, label: x.label, payload: x }));
+          } catch (err) {
+            setError(err.response?.data);
+          }
+
+          return [];
+        },
+      };
+
       return (
         <FormControlSelect
-          name={name}
-          isClearable
-          options={[{ value: formValues?.endpoint, label: 'Use Endpoint Form' }]}
-          onChange={(val) => onUpdate({ name, value: val ? formValues?.endpoint : undefined })}
+          // Used to avoid long label to be cropped when selected. Closes #65.
+          // By adding this prop, it also remove the horizontal scrollbar.
+          menuPortalTarget={document.body}
+          name={id}
+          onChange={({ payload }) => {
+            onUpdate({ name: id, value: payload });
+          }}
+          value={fieldValue ? {
+            label: fieldValue.label,
+            value: fieldValue.id,
+            payload: fieldValue,
+          } : null}
+          {...selectProps}
         />
       );
-
-    case 'ARTIFACT':
-      return type;
-
-    case 'COMMAND_LINE':
-      return type;
+    }
 
     default:
       return type;
@@ -254,8 +216,8 @@ export const SmartField = ({
     <FormGroup
       key={dependsOnValues}
       label={label}
-      helper={helper}
-      isOptional={!required}
+      helper={comment}
+      isOptional={!mandatory}
       validationState={error ? 'danger' : undefined}
       feedbackMessage={error ? error.message : undefined}
     >

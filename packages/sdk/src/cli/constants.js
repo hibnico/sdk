@@ -10,6 +10,11 @@ module.exports = {
     FILENAME: 'context',
     FILENAME_GLOB: 'context.{yml,yaml}',
   },
+  CONNECTION_TYPE: {
+    ID: 'connectiontype',
+    FILENAME: 'metadata',
+    FILENAME_GLOB: 'metadata.{yml,yaml}',
+  },
   ERROR_CODE: {
     INVALID_COMMAND: 1,
     NOT_A_TECHNOLOGY_FOLDER: 2,

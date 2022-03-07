@@ -3,7 +3,6 @@ import { PageEmptyState, Button, Tooltip } from 'saagie-ui/react';
 import { Status } from 'saagie-ui/react/projects';
 import axios from 'axios';
 import { useMutation } from 'react-query';
-import { v4 as uuidv4 } from 'uuid';
 import { useYAMLConfigContext } from '../contexts/YAMLConfigContext';
 import { useFormContext } from '../contexts/FormContext';
 import { Logs } from './Logs/index';
@@ -29,7 +28,7 @@ function useDebug() {
 }
 
 export const Actions = () => {
-  const [lastInstance, setLastInstance] = useState();
+  const [jobMetadata, setJobMetadata] = useState();
   const [logs, setLogs] = useState();
 
   const isDebugMode = useDebug();
@@ -40,55 +39,46 @@ export const Actions = () => {
 
   const {
     __folderPath: contextFolderPath,
-    instance,
+    actions,
   } = selectedContext || {};
 
-  const { actions } = instance || {};
   const {
-    onStart,
-    onStop,
+    start,
+    stop,
     getStatus,
     getLogs,
   } = actions || {};
-
-  const createInstance = () => {
-    const newInstance = {
-      id: uuidv4(),
-    };
-
-    setLastInstance(newInstance);
-
-    return newInstance;
-  };
 
   const [getJobStatus, { status: getJobStatusStatus, data: jobStatus }] = useMutation(() => axios.post('/api/action', {
     script: `${contextFolderPath}/${getStatus?.script}`,
     function: getStatus?.function,
     params: {
-      job: { featuresValues: formValues.job },
-      instance: lastInstance,
+      connectionValues: formValues.connectionValues,
+      parameters: formValues.parameters,
+      jobMetadata,
     },
   }), {
     onError: (err) => addError({ ...err, on: { action: 'Get Status', date: new Date() } }),
   });
 
   const [runJob, { status: runJobStatus, data: instancePayloadResponse }] = useMutation(() => axios.post('/api/action', {
-    script: `${contextFolderPath}/${onStart?.script}`,
-    function: onStart?.function,
+    script: `${contextFolderPath}/${start?.script}`,
+    function: start?.function,
     params: {
-      job: { featuresValues: formValues.job },
-      instance: createInstance(),
+      connectionValues: formValues.connectionValues,
+      parameters: formValues.parameters,
     },
   }), {
     onError: (err) => addError({ ...err, on: { action: 'Start', date: new Date() } }),
   });
 
   const [stopJob, { status: stopJobStatus }] = useMutation(() => axios.post('/api/action', {
-    script: `${contextFolderPath}/${onStop?.script}`,
-    function: onStop?.function,
+    script: `${contextFolderPath}/${stop?.script}`,
+    function: stop?.function,
     params: {
-      job: { featuresValues: formValues.job },
-      instance: lastInstance,
+      connectionValues: formValues.connectionValues,
+      parameters: formValues.parameters,
+      jobMetadata,
     },
   }), {
     onError: (err) => addError({ ...err, on: { action: 'Stop', date: new Date() } }),
@@ -98,8 +88,9 @@ export const Actions = () => {
     script: `${contextFolderPath}/${getLogs?.script}`,
     function: getLogs?.function,
     params: {
-      job: { featuresValues: formValues.job },
-      instance: lastInstance,
+      connectionValues: formValues.connectionValues,
+      parameters: formValues.parameters,
+      jobMetadata,
     },
   }), {
     onSuccess: (res) => setLogs(res.logs),
@@ -107,9 +98,9 @@ export const Actions = () => {
   });
 
   useEffect(() => {
-    setLastInstance((i) => ({
+    setJobMetadata((i) => ({
       ...i,
-      payload: instancePayloadResponse?.data,
+      payload: instancePayloadResponse,
     }));
   }, [instancePayloadResponse]);
 
@@ -134,7 +125,7 @@ export const Actions = () => {
                   Start
                 </Button>
               </div>
-              {onStop && (
+              {stop && jobMetadata && (
                 <div className="sui-g-grid__item">
                   <Button
                     color="action-stop"
@@ -145,15 +136,17 @@ export const Actions = () => {
                   </Button>
                 </div>
               )}
-              <div className="sui-g-grid__item">
-                <Button
-                  onClick={() => getJobStatus()}
-                  isLoading={getJobStatusStatus === 'loading'}
-                >
-                  Get Status
-                </Button>
-              </div>
-              {getLogs && (
+              {getStatus && jobMetadata && (
+                <div className="sui-g-grid__item">
+                  <Button
+                    onClick={() => getJobStatus()}
+                    isLoading={getJobStatusStatus === 'loading'}
+                  >
+                    Get Status
+                  </Button>
+                </div>
+              )}
+              {getLogs && jobMetadata && (
                 <div className="sui-g-grid__item">
                   <Button
                     onClick={() => getJobLogs()}

@@ -34,7 +34,7 @@ export const FormContextProvider = ({ children }) => {
         },
       };
 
-      setItem(newState?.endpoint);
+      setItem(newState?.connectionValues);
 
       return newState;
     });
@@ -46,10 +46,10 @@ export const FormContextProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const endpoint = getItem();
+    const connectionValues = getItem();
 
-    if (endpoint) {
-      setFormValues({ endpoint });
+    if (connectionValues) {
+      setFormValues({ connectionValues });
     }
   }, [getItem]);
 

@@ -6,26 +6,27 @@ import { useFormContext } from '../contexts/FormContext';
 
 const propTypes = {
   name: PropTypes.string.isRequired,
+  parameters: PropTypes.array.isRequired,
 };
 
 const defaultProps = {};
 
-export const SmartForm = ({ name }) => {
+export const SmartForm = ({ name, parameters }) => {
   const { selectedContext } = useYAMLConfigContext();
   const { formValues, updateForm } = useFormContext();
 
   return (
     <>
-      {!selectedContext?.[name]?.features?.length && (
+      {!parameters?.length && (
         <div className="sui-m-message as--light as--warning">
           No features
         </div>
       )}
       <form autoComplete="off">
-        {selectedContext?.[name]?.features?.map((field) => (
+        {parameters?.map((parameter) => (
           <SmartField
-            key={field.name}
-            field={field}
+            key={parameter.id}
+            parameter={parameter}
             formName={name}
             formValues={formValues}
             contextFolderPath={selectedContext?.__folderPath}

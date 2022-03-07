@@ -1,6 +1,6 @@
 {
   "name": "@saagie/sdk",
-  "version": "0.12.5-alpha.0+2aea9ed",
+  "version": "0.12.5-alpha.1+3ef4067",
   "bin": {
     "saagie-sdk": "src/cli/cli.js"
   },
@@ -47,5 +47,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "gitHead": "2aea9ed089a2e2f10a222711263d52ffed36ca37"
+  "gitHead": "3ef4067370c1626016776579d5271198ecea80e1"
 }

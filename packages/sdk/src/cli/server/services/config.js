@@ -1,7 +1,7 @@
 const { isWindows } = require('../../utils/isWindows');
 
 const yaml = require('../../utils/yaml');
-const { CONTEXT, TECHNOLOGY } = require('../../constants');
+const { CONTEXT, TECHNOLOGY, CONNECTION_TYPE } = require('../../constants');
 
 module.exports = async (req, res) => {
   // globby do not work when it sees \\ (backslashes) so we replace all occurences
@@ -27,5 +27,18 @@ module.exports = async (req, res) => {
     (a, b) => a && a.label && a.label.toString().localeCompare(b && b.label),
   );
 
-  res.send({ technology, contexts: labelSortedContextData });
+  const connectionTypeData = await yaml.parseFilesToJSON({
+    folder: `${normalizedCurrentWorkingDirectory}/../../connectiontype`,
+    filename: CONNECTION_TYPE.FILENAME,
+  });
+
+  const labelSortedConnectionTypeData = connectionTypeData.sort(
+    (a, b) => a && a.label && a.label.toString().localeCompare(b && b.label),
+  );
+
+  res.send({
+    technology,
+    contexts: labelSortedContextData,
+    connectionTypes: labelSortedConnectionTypeData,
+  });
 };

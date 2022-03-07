@@ -14,7 +14,7 @@ const propTypes = {};
 const defaultProps = {};
 
 export const Index = () => {
-  const { status, selectedContext } = useYAMLConfigContext();
+  const { status, selectedContext, config } = useYAMLConfigContext();
   const { formValues } = useFormContext();
   const { infoStatus, data: info } = useQuery('info', () => axios('/api/info'));
 
@@ -36,21 +36,25 @@ export const Index = () => {
     );
   }
 
+  const connectionType = config?.connectionTypes?.filter((c) => c.id === selectedContext?.connectionTypeId)?.[0];
+
   return (
     <Page size="xxl">
       <AppTopbar />
       <PageContent key={selectedContext?.id}>
         <div className="sui-g-grid as--gutter-xxl">
           <div className="sui-g-grid__item as--2_7">
-            <h3>Endpoint Form</h3>
-            <SmartForm name="endpoint" />
+            <h3>Connection Type Form</h3>
+            {connectionType
+              ? <SmartForm name="connectionValues" parameters={connectionType?.parameters} />
+              : <span className="sdk-error-message">Error: connection type &apos;{selectedContext?.connectionTypeId}&apos; not found</span>}
           </div>
           <div
             className="sui-g-grid__item as--2_7"
-            key={JSON.stringify(formValues.endpoint)}
+            key={JSON.stringify(formValues.connectionValues)}
           >
             <h3>Job Form</h3>
-            <SmartForm name="job" />
+            <SmartForm name="parameters" parameters={selectedContext?.parameters} />
           </div>
           <div className="sui-g-grid__item as--3_7">
             <h3>Instance Actions</h3>
