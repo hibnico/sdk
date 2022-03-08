@@ -15,7 +15,6 @@ const propTypes = {
   onUpdate: PropTypes.func,
   formName: PropTypes.string.isRequired,
   formValues: PropTypes.object,
-  contextFolderPath: PropTypes.string,
   parameter: PropTypes.object,
   dependencyReady: PropTypes.bool,
 };
@@ -23,7 +22,6 @@ const propTypes = {
 const defaultProps = {
   onUpdate: () => {},
   formValues: {},
-  contextFolderPath: '',
   parameter: {},
   dependencyReady: true,
 };
@@ -32,7 +30,6 @@ export const SmartField = ({
   onUpdate = () => {},
   formValues = {},
   formName,
-  contextFolderPath,
   dependencyReady,
   parameter: {
     type,
@@ -47,8 +44,9 @@ export const SmartField = ({
   },
 }) => {
   const [error, setError] = useState();
+  const [fetchedDynamicValues, setFetchedDynamicValues] = useState();
 
-  const [getValues] = useScriptCall(dynamicValues, formValues);
+  const [getDynamicValues] = useScriptCall(dynamicValues, formValues, (res) => setFetchedDynamicValues(res.data));
 
   const currentForm = formValues?.[formName] || {};
 
@@ -130,7 +128,7 @@ export const SmartField = ({
         }
 
         try {
-          const { data } = await getValues();
+          const { data } = await getDynamicValues();
           return data?.map((x) => ({ value: x.id, label: x.label, payload: x }));
         } catch (err) {
           setError(err.response?.data);
@@ -145,12 +143,8 @@ export const SmartField = ({
           // By adding this prop, it also remove the horizontal scrollbar.
           menuPortalTarget={document.body}
           name={id}
-          onChange={({ payload }) => onUpdate({ name: id, value: payload })}
-          value={fieldValue ? {
-            label: fieldValue.label,
-            value: fieldValue.id,
-            payload: fieldValue,
-          } : null}
+          onChange={({ value }) => onUpdate({ name: id, value })}
+          value={fieldValue ? fetchedDynamicValues?.filter((v) => v.id === fieldValue)?.[0] : null}
           isAsync
           cacheOptions
           defaultOptions
