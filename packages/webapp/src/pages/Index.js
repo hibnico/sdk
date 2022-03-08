@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from 'react-query';
 import {
-  Page, PageLoader, PageContent, EmptyState, PageFooter,
+  Page, PageLoader, PageContent, EmptyState, PageFooter, FormFeedback,
 } from 'saagie-ui/react';
 import axios from 'axios';
 import { AppTopbar } from '../components/AppTopbar';
@@ -12,6 +12,23 @@ import { useFormContext } from '../contexts/FormContext';
 
 const propTypes = {};
 const defaultProps = {};
+
+const getCurrentConnectionType = (config, selectedContext) =>
+  config?.connectionTypes?.filter((c) => c.id === selectedContext?.connectionTypeId)?.[0];
+
+const isConnectionTypeReady = (parameters, formValues) => {
+  if (!parameters || !formValues) {
+    return false;
+  }
+  const mandatoryFields = parameters.filter((param) => param.mandatory);
+  for (let i = 0; i < mandatoryFields.length; i += 1) {
+    const value = formValues[mandatoryFields[i].id];
+    if (!value) {
+      return false;
+    }
+  }
+  return true;
+};
 
 export const Index = () => {
   const { status, selectedContext, config } = useYAMLConfigContext();
@@ -36,7 +53,9 @@ export const Index = () => {
     );
   }
 
-  const connectionType = config?.connectionTypes?.filter((c) => c.id === selectedContext?.connectionTypeId)?.[0];
+  const connectionType = getCurrentConnectionType(config, selectedContext);
+  const connectionTypeReady = isConnectionTypeReady(connectionType?.parameters, formValues?.connectionValues);
+  const jobFormReady = isConnectionTypeReady(selectedContext?.parameters, formValues?.parameters);
 
   return (
     <Page size="xxl">
@@ -46,7 +65,14 @@ export const Index = () => {
           <div className="sui-g-grid__item as--2_7">
             <h3>Connection Type Form</h3>
             {connectionType
-              ? <SmartForm name="connectionValues" parameters={connectionType?.parameters} />
+              ? (
+                <div>
+                  { connectionTypeReady
+                    ? <FormFeedback color="success">Form validated</FormFeedback>
+                    : <FormFeedback color="danger">The form is missing required information</FormFeedback>}
+                  <SmartForm name="connectionValues" parameters={connectionType?.parameters} />
+                </div>
+              )
               : <span className="sdk-error-message">Error: connection type &apos;{selectedContext?.connectionTypeId}&apos; not found</span>}
           </div>
           <div
@@ -54,11 +80,16 @@ export const Index = () => {
             key={JSON.stringify(formValues.connectionValues)}
           >
             <h3>Job Form</h3>
-            <SmartForm name="parameters" parameters={selectedContext?.parameters} />
+            <div>
+              { jobFormReady
+                ? <FormFeedback color="success">Form validated</FormFeedback>
+                : <FormFeedback color="danger">The form is missing required information</FormFeedback>}
+              <SmartForm name="parameters" parameters={selectedContext?.parameters} dependencyReady={connectionTypeReady} />
+            </div>
           </div>
           <div className="sui-g-grid__item as--3_7">
             <h3>Instance Actions</h3>
-            <Actions />
+            <Actions ready={connectionTypeReady && jobFormReady} />
           </div>
         </div>
       </PageContent>

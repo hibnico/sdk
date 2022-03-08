@@ -3,12 +3,16 @@ import { PageEmptyState, Button, Tooltip } from 'saagie-ui/react';
 import { Status } from 'saagie-ui/react/projects';
 import axios from 'axios';
 import { useMutation } from 'react-query';
+import PropTypes from 'prop-types';
 import { useYAMLConfigContext } from '../contexts/YAMLConfigContext';
 import { useFormContext } from '../contexts/FormContext';
 import { Logs } from './Logs/index';
 import { useErrorContext } from '../contexts/ErrorContext';
 
-const propTypes = {};
+const propTypes = {
+  ready: PropTypes.bool.isRequired,
+};
+
 const defaultProps = {};
 
 const JobStatus = {
@@ -27,7 +31,7 @@ function useDebug() {
   return query.get('debug') !== null;
 }
 
-export const Actions = () => {
+export const Actions = ({ ready }) => {
   const [jobMetadata, setJobMetadata] = useState();
   const [logs, setLogs] = useState();
 
@@ -121,6 +125,7 @@ export const Actions = () => {
                   color="action-play"
                   onClick={() => runJob()}
                   isLoading={runJobStatus === 'loading'}
+                  isDisabled={!ready}
                 >
                   Start
                 </Button>
@@ -131,6 +136,7 @@ export const Actions = () => {
                     color="action-stop"
                     onClick={() => stopJob()}
                     isLoading={stopJobStatus === 'loading'}
+                    isDisabled={!ready}
                   >
                     Stop
                   </Button>
@@ -141,6 +147,7 @@ export const Actions = () => {
                   <Button
                     onClick={() => getJobStatus()}
                     isLoading={getJobStatusStatus === 'loading'}
+                    isDisabled={!ready}
                   >
                     Get Status
                   </Button>
@@ -151,6 +158,7 @@ export const Actions = () => {
                   <Button
                     onClick={() => getJobLogs()}
                     isLoading={getJobLogsStatus === 'loading'}
+                    isDisabled={!ready}
                   >
                     Get Logs
                   </Button>

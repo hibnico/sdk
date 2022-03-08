@@ -1,5 +1,5 @@
 import React, {
-  useState, useRef, useCallback,
+  useState, useRef, useEffect,
 } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
@@ -17,6 +17,7 @@ const propTypes = {
   formValues: PropTypes.object,
   contextFolderPath: PropTypes.string,
   parameter: PropTypes.object,
+  dependencyReady: PropTypes.bool,
 };
 
 const defaultProps = {
@@ -24,6 +25,7 @@ const defaultProps = {
   formValues: {},
   contextFolderPath: '',
   parameter: {},
+  dependencyReady: true,
 };
 
 export const SmartField = ({
@@ -31,6 +33,7 @@ export const SmartField = ({
   formValues = {},
   formName,
   contextFolderPath,
+  dependencyReady,
   parameter: {
     type,
     id,
@@ -40,7 +43,6 @@ export const SmartField = ({
     dynamicValues,
     staticValues,
     dependsOn,
-    value,
     defaultValue,
   },
 }) => {
@@ -51,43 +53,18 @@ export const SmartField = ({
   const shouldBeDisplayed = !dependsOn || dependsOn?.every((x) => currentForm[x]);
   const dependsOnValues = JSON.stringify(dependsOn?.map((x) => currentForm[x]));
 
-  // State for input data fetching. This is used to auto fill the inputs.
-  const [formControlInputValue, setFormControlInputValue] = useState('');
-  const [formControlInputLoading, setFormControlInputLoading] = useState(Boolean(value && typeof value === 'object' && value.script));
-
   const currentFormRef = useRef();
   currentFormRef.current = currentForm;
 
-  const fieldValue = currentForm[id] || formControlInputValue;
+  const fieldValue = currentForm[id];
 
-  const handleFormControlInput = useCallback((e) => {
-    setFormControlInputValue('');
-    onUpdate({ name: id, value: e.target.value });
-  }, [onUpdate, id]);
-
-  const triggerInputDataFetching = () => {
-    if (value && typeof value === 'object' && value.script && shouldBeDisplayed && formControlInputLoading) {
-      const fetchValue = async () => {
-        try {
-          const { data } = await axios.post('/api/action', {
-            script: `${contextFolderPath}/${value.script}`,
-            function: value.function,
-            params: {
-              featuresValues: currentFormRef.current,
-            },
-          });
-
-          onUpdate({ id, value: data });
-        } catch (err) {
-          setError(err.response?.data);
-        }
-
-        setFormControlInputLoading(false);
-      };
-
-      fetchValue();
+  useEffect(() => {
+    if (!fieldValue && mandatory) {
+      setError({ message: 'Required' });
+    } else {
+      setError(null);
     }
-  };
+  }, [fieldValue, mandatory]);
 
   const getField = () => {
     switch (type) {
@@ -104,16 +81,12 @@ export const SmartField = ({
     }
 
     case 'TEXT':
-      triggerInputDataFetching();
-
       return (
         <FormControlInput
           name={id}
           value={fieldValue || ''}
-          autoComplete={id}
-          onChange={handleFormControlInput}
+          onChange={(e) => onUpdate({ name: id, value: e.target.value })}
           required={mandatory}
-          isLoading={formControlInputLoading}
         />
       );
 
@@ -128,60 +101,45 @@ export const SmartField = ({
       );
 
     case 'STATIC_SELECT': {
-      const selectProps = {
-        options: staticValues?.map((option) => (
-          { value: option.id, label: option.label, payload: option }
-        )),
-      };
       return (
         <FormControlSelect
           // Used to avoid long label to be cropped when selected. Closes #65.
           // By adding this prop, it also remove the horizontal scrollbar.
           menuPortalTarget={document.body}
           name={id}
-          onChange={({ payload }) => {
-            onUpdate({ name: id, value: payload });
-          }}
+          onChange={({ payload }) => onUpdate({ name: id, value: payload })}
           value={fieldValue ? {
             label: fieldValue.label,
             value: fieldValue.id,
             payload: fieldValue,
           } : null}
-          {...selectProps}
+          options={staticValues?.map((option) => (
+            { value: option.id, label: option.label, payload: option }
+          ))}
         />
       );
     }
     case 'DYNAMIC_SELECT': {
-      const selectProps = {
-        isAsync: true,
-        cacheOptions: true,
-        defaultOptions: true,
-        loadOptions: async () => {
-          setError(null);
+      const loadOptions = async () => {
+        setError(null);
 
-          if (
-            !shouldBeDisplayed
-            || !dynamicValues
-            || !dynamicValues.script
-            || !dynamicValues.function
-          ) {
-            return dynamicValues;
-          }
-
-          try {
-            const { data } = await axios.post('/api/action', {
-              script: `${contextFolderPath}/${dynamicValues.script}`,
-              function: dynamicValues.function,
-              params: formValues,
-            });
-
-            return data?.map((x) => ({ value: x.id, label: x.label, payload: x }));
-          } catch (err) {
-            setError(err.response?.data);
-          }
-
+        if (!shouldBeDisplayed || !dependencyReady) {
           return [];
-        },
+        }
+
+        try {
+          const { data } = await axios.post('/api/action', {
+            script: `${contextFolderPath}/${dynamicValues.script}`,
+            function: dynamicValues.function,
+            params: formValues,
+          });
+
+          return data?.map((x) => ({ value: x.id, label: x.label, payload: x }));
+        } catch (err) {
+          setError(err.response?.data);
+        }
+
+        return [];
       };
 
       return (
@@ -190,15 +148,16 @@ export const SmartField = ({
           // By adding this prop, it also remove the horizontal scrollbar.
           menuPortalTarget={document.body}
           name={id}
-          onChange={({ payload }) => {
-            onUpdate({ name: id, value: payload });
-          }}
+          onChange={({ payload }) => onUpdate({ name: id, value: payload })}
           value={fieldValue ? {
             label: fieldValue.label,
             value: fieldValue.id,
             payload: fieldValue,
           } : null}
-          {...selectProps}
+          isAsync
+          cacheOptions
+          defaultOptions
+          loadOptions={loadOptions}
         />
       );
     }
