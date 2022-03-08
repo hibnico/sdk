@@ -14,7 +14,7 @@
     "react-scripts": "3.4.0",
     "react-virtualized-auto-sizer": "1.0.2",
     "react-window": "1.8.5",
-    "saagie-ui": "0.62.3",
+    "saagie-ui": "0.78.0",
     "uuid": "7.0.3"
   },
   "scripts": {

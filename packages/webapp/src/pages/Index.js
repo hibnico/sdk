@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from 'react-query';
 import {
-  Page, PageLoader, PageContent, EmptyState, PageFooter, FormFeedback,
+  Page, PageLoader, PageContent, EmptyState, PageFooter, FormFeedback, Button, InfoText, Message,
 } from 'saagie-ui/react';
 import axios from 'axios';
 import { AppTopbar } from '../components/AppTopbar';
@@ -32,7 +32,7 @@ const isConnectionTypeReady = (parameters, formValues) => {
 
 export const Index = () => {
   const { status, selectedContext, config } = useYAMLConfigContext();
-  const { formValues } = useFormContext();
+  const { formValues, clearForm } = useFormContext();
   const { infoStatus, data: info } = useQuery('info', () => axios('/api/info'));
 
   if (status === 'loading') {
@@ -63,29 +63,37 @@ export const Index = () => {
       <PageContent key={selectedContext?.id}>
         <div className="sui-g-grid as--gutter-xxl">
           <div className="sui-g-grid__item as--2_7">
-            <h3>Connection Type Form</h3>
-            {connectionType
-              ? (
-                <div>
+            <h3>
+              <div className="sui-g-grid as--no-wrap">
+                <span className="sui-g-grid__item">
+                  Connection Type Form
                   { connectionTypeReady
-                    ? <FormFeedback color="success">Form validated</FormFeedback>
-                    : <FormFeedback color="danger">The form is missing required information</FormFeedback>}
-                  <SmartForm name="connectionValues" parameters={connectionType?.parameters} />
-                </div>
-              )
-              : <span className="sdk-error-message">Error: connection type &apos;{selectedContext?.connectionTypeId}&apos; not found</span>}
+                    ? <InfoText color="success">Form validated</InfoText>
+                    : <InfoText color="danger">The form is missing required information</InfoText>}
+                </span>
+                <Button className="sui-g-grid__item as--push as--middle" onClick={() => clearForm('connectionValues')}>Clear</Button>
+              </div>
+            </h3>
+            {connectionType
+              ? <SmartForm name="connectionValues" parameters={connectionType?.parameters} />
+              : <Message color="danger">Error: connection type &apos;{selectedContext?.connectionTypeId}&apos; not found</Message>}
           </div>
           <div
             className="sui-g-grid__item as--2_7"
             key={JSON.stringify(formValues.connectionValues)}
           >
-            <h3>Job Form</h3>
-            <div>
-              { jobFormReady
-                ? <FormFeedback color="success">Form validated</FormFeedback>
-                : <FormFeedback color="danger">The form is missing required information</FormFeedback>}
-              <SmartForm name="parameters" parameters={selectedContext?.parameters} dependencyReady={connectionTypeReady} />
-            </div>
+            <h3>
+              <div className="sui-g-grid as--no-wrap">
+                <span className="sui-g-grid__item">
+                  Job Form
+                  { jobFormReady
+                    ? <FormFeedback color="success">Form validated</FormFeedback>
+                    : <FormFeedback color="danger">The form is missing required information</FormFeedback>}
+                </span>
+                <Button className="sui-g-grid__item as--push as--middle" onClick={() => clearForm('parameters')}>Clear</Button>
+              </div>
+            </h3>
+            <SmartForm name="parameters" parameters={selectedContext?.parameters} dependencyReady={connectionTypeReady} />
           </div>
           <div className="sui-g-grid__item as--3_7">
             <h3>Instance Actions</h3>

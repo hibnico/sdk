@@ -18,7 +18,7 @@ export const useFormContext = () => useContext(FormContext);
 
 export const FormContextProvider = ({ children }) => {
   const yaml = useYAMLConfigContext();
-  const { setItem, getItem, removeItem } = useLocalStorage(
+  const { setItem, getItem } = useLocalStorage(
     `${yaml.config?.technology?.id}.${yaml.selectedContext?.id}.formValues`,
   );
 
@@ -34,22 +34,28 @@ export const FormContextProvider = ({ children }) => {
         },
       };
 
-      setItem(newState?.connectionValues);
+      setItem(newState);
 
       return newState;
     });
   }, [setItem]);
 
-  const clearForm = () => {
-    setFormValues();
-    removeItem();
+  const clearForm = (name) => {
+    setFormValues((state) => {
+      const newState = {
+        ...(state || {}),
+        [name]: {},
+      };
+      setItem(newState);
+      return newState;
+    });
   };
 
   useEffect(() => {
-    const connectionValues = getItem();
+    const storedFormValues = getItem();
 
-    if (connectionValues) {
-      setFormValues({ connectionValues });
+    if (storedFormValues) {
+      setFormValues(storedFormValues);
     }
   }, [getItem]);
 

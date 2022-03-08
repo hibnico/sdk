@@ -2,7 +2,6 @@ import React, {
   useState, useRef, useEffect,
 } from 'react';
 import PropTypes from 'prop-types';
-import axios from 'axios';
 import {
   FormGroup,
   FormCheck,
@@ -10,6 +9,7 @@ import {
   FormPassword,
   FormControlSelect,
 } from 'saagie-ui/react';
+import { useScriptCall } from '../contexts/ScriptCallHistoryContext';
 
 const propTypes = {
   onUpdate: PropTypes.func,
@@ -47,6 +47,8 @@ export const SmartField = ({
   },
 }) => {
   const [error, setError] = useState();
+
+  const [getValues] = useScriptCall(dynamicValues, formValues);
 
   const currentForm = formValues?.[formName] || {};
 
@@ -128,12 +130,7 @@ export const SmartField = ({
         }
 
         try {
-          const { data } = await axios.post('/api/action', {
-            script: `${contextFolderPath}/${dynamicValues.script}`,
-            function: dynamicValues.function,
-            params: formValues,
-          });
-
+          const { data } = await getValues();
           return data?.map((x) => ({ value: x.id, label: x.label, payload: x }));
         } catch (err) {
           setError(err.response?.data);

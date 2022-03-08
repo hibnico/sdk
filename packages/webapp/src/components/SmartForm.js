@@ -6,11 +6,12 @@ import { useFormContext } from '../contexts/FormContext';
 
 const propTypes = {
   name: PropTypes.string.isRequired,
-  parameters: PropTypes.array.isRequired,
+  parameters: PropTypes.array,
   dependencyReady: PropTypes.bool,
 };
 
 const defaultProps = {
+  parameters: [],
   dependencyReady: true,
 };
 
